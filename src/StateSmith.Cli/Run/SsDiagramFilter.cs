@@ -46,9 +46,6 @@ public class SsDiagramFilter
 
     public bool IsSsPlantUmlFileContents(string diagramContents)
     {
-        // Need to find `@startuml <someWord>` and `->`
-        var regex = new Regex(@"@startuml\s+\w+");
-        return regex.IsMatch(diagramContents) && diagramContents.Contains("->");
-        // Don't test for `[*]` as new users may forget to add it initially.
+        return diagramContents.Contains("@startuml");
     }
 }
