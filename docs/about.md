@@ -60,6 +60,7 @@ github integration documentation.
 
 ## TODO
 * fix the hero graphic on main page
+* use the current binary, not a hardcoded downloaded binary
 * package manager support
 * google analytics support to track broken pages
 * Add a link to allow readers to file feedback bugs in the footer
