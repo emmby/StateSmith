@@ -4,6 +4,7 @@
 Title: 
 
 This PR addresses various onboarding usability challenges for new statesmith users.
+You can preview the new documentation here: https://emmby.github.io/StateSmith/
 
 #### Documentation is consolidated onto GitHub Pages.
 Previously, documentation was a mix
