@@ -7,8 +7,32 @@ StateSmith is a cross platform, free/open source tool for synchronizing state ma
 
 With StateSmith, your state machine diagram is code. Never worry about keeping your statemachine documentation in sync with your code again.
 
-[TODO convert this to mermaid]
-![misc documentation-main page](https://github.com/user-attachments/assets/42fdb74b-0cd1-43b4-8103-7fd412ca7397)
+Visit our [Quickstart](/docs/quickstart/) to get started.
+
+```mermaid
+
+flowchart TD
+
+DrawIO["draw.io"]
+PlantUML
+yED
+StateSmith@{ img: "https://github.com/emmby/statesmith-simplified/raw/main/docs/media/logo.png", label:"StateSmith", pos: "t", w: 100, h: 100 }
+
+
+subgraph code
+CPP["C / C++"]
+CSharp["C#"]
+JS["JavaScript<br />TypeScript"]
+Python
+end
+
+DrawIO --> StateSmith
+PlantUML --> StateSmith
+yED --> StateSmith
+
+StateSmith --> code
+
+```
 
 
 
@@ -21,15 +45,33 @@ With StateSmith, your state machine diagram is code. Never worry about keeping y
 
 It's easy to get started with StateSmith.
 
-1. First, write or draw a statemachine in the tool of your choice
-```
-# hello.mmd
-a -> b
-```
- 2. run `statesmith hello.mmd`
+1. First, write or draw a statemachine in the tool of your choice<br />
+
+<table>
+<tr>
+<td>
+
+<img src="https://emmby.github.io/statesmith-simplified/media/light.svg" />
+
+</td>
+<td>
+<pre>
+# light.puml
+@startuml
+[*] --> Off
+Off -> On : Switch pressed
+On -> Off : Switch pressed
+@enduml
+</pre>
+</td>
+</tr>
+</table>
+
+
+ 2. run `statesmith light.puml`
  3. add the resulting state machine code to your C, C++, C#, Java, JavaScript, or TypeScript app.
 
-Learn more in our [Quickstart](https://emmby.github.io/statesmith-simplified/) tutorial.
+Learn more in our [Quickstart](https://emmby.github.io/statesmith-simplified/quickstart/) tutorial.
 
 
 
@@ -51,15 +93,16 @@ statesmith is incredibly easy to use.
 
 You can easily try out your statemachine using the built in simulator.
 
-### Works with the tools you already use
-statesmith doesn't try to take over your entire workflow. It does not replace your IDE, require you to write tests in a custom language, or have its own build tool. It works with the tools you're already using, like GitHub, VS Code, Visual Studio, JUnit, Jest, etc.
-
-See [Integrations]() for recipes to integrate statesmith into your tooling.
-
 
 ### The Diagram is always accurate!
 
 Before I created StateSmith, it was always a pain trying to manually synchronize a hand written state machine with a drawing. Urgent client requests come in and you update the code, but do you and your team always remember to update the drawing? Probably not and so the rot begins. Documentation trust issues arise and as designs get larger, the effort to ensure the diagram is accurate starts to become quite punishing.
 
 Now that we use StateSmith at my work, I never have to worry about the above. I love generating fully working code **from** the documentation. Incredibly helpful for teams and communicating with clients.
+
+
+### Works with the tools you already use
+statesmith doesn't try to take over your entire workflow. It does not replace your IDE, require you to write tests in a custom language, or have its own build tool. It works with the tools you're already using, like GitHub, VS Code, Visual Studio, JUnit, Jest, etc.
+
+See [Integrations]() for recipes to integrate statesmith into your tooling.
 
