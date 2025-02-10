@@ -1,1 +1,1 @@
-Visit the <a href="https://github.com/emmby/statesmith-simplified/examples">Examples</a> in GitHub.
+Visit the <a href="https://github.com/emmby/StateSmith/examples">Examples</a> in GitHub.

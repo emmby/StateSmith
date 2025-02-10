@@ -70,7 +70,7 @@ You can add an include like the following to include your PlantUML code directly
 {% include_relative lightbulb.puml %}
 </pre>
 
-This does not do anything on GitHub Docs markdown. It will only be processed for GitHub Pages. See how we use it [here](https://github.com/emmby/statesmith-simplified/edit/main/docs/integrations/github.md).
+This does not do anything on GitHub Docs markdown. It will only be processed for GitHub Pages. See how we use it [here](https://github.com/emmby/StateSmith/edit/main/docs/integrations/github.md).
 
 
 ## Displaying Diagrams using draw.io
@@ -83,7 +83,7 @@ Upload your images to GitHub and using markdown or html to render them, eg.
   ![lightbulb](lightbulb.drawio.svg)
 ```
 ```
-<img src="https://emmby.github.io/statesmith-simplified/integrations/lightbulb.drawio.svg" >
+<img src="https://emmby.github.io/StateSmith/integrations/lightbulb.drawio.svg" >
 ```
 
 TODO drawio example svg

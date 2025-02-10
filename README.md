@@ -29,7 +29,7 @@ a -> b
  2. run `statesmith hello.mmd`
  3. add the resulting state machine code to your C, C++, C#, Java, JavaScript, or TypeScript app.
 
-Learn more in our [Quickstart](https://emmby.github.io/statesmith-simplified/) tutorial.
+Learn more in our [Quickstart](https://emmby.github.io/StateSmith/) tutorial.
 
 
 

@@ -16,7 +16,7 @@ flowchart TD
 DrawIO["draw.io"]
 PlantUML
 yED
-StateSmith@{ img: "https://github.com/emmby/statesmith-simplified/raw/main/docs/media/logo.png", label:"StateSmith", pos: "t", w: 100, h: 100 }
+StateSmith@{ img: "https://github.com/emmby/StateSmith/raw/main/docs/media/logo.png", label:"StateSmith", pos: "t", w: 100, h: 100 }
 
 
 subgraph code
@@ -51,7 +51,7 @@ It's easy to get started with StateSmith.
 <tr>
 <td>
 
-<img src="https://emmby.github.io/statesmith-simplified/media/light.svg" />
+<img src="https://emmby.github.io/StateSmith/media/light.svg" />
 
 </td>
 <td>
@@ -71,7 +71,7 @@ On -> Off : Switch pressed
  2. run `statesmith light.puml`
  3. add the resulting state machine code to your C, C++, C#, Java, JavaScript, or TypeScript app.
 
-Learn more in our [Quickstart](https://emmby.github.io/statesmith-simplified/quickstart/) tutorial.
+Learn more in our [Quickstart](https://emmby.github.io/StateSmith/quickstart/) tutorial.
 
 
 
