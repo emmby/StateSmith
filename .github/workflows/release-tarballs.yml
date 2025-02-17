@@ -1,4 +1,4 @@
-name: Release new versions of StateSmith to repos on v*.*.* tags
+name: Release StateSmith tarballs on v*.*.* tags
 
 on:
   push:
