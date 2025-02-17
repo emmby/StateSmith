@@ -49,17 +49,10 @@ jobs:
                 rm -rf ./bin
               )
               (
-                cd src/StateSmith.Exe
-                dotnet publish -c Release -r $arch -p:PublishSingleFile=true --self-contained --framework $framework /p:DefineConstants="SS_SINGLE_FILE_APPLICATION" 
-                mv ./bin/Release/$framework/$arch/publish/StateSmith.Exe$extension $staging/statesmith$extension
-                rm -rf ./bin
-              )
-              (
                 cd $staging                  
                 ls -lh .
-                tar zcf $publish/statesmith-${arch}-$framework.tar.gz ss.cli$extension statesmith$extension
+                tar zcf $publish/statesmith-${arch}-$framework.tar.gz ss.cli$extension
               )
-
               rm -rf $staging
             done
           done
