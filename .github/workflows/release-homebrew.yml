@@ -40,6 +40,7 @@ jobs:
             # Test command for your formula, used for `brew test`.
             # Optional - string
             test: |
+              `system 'touch', '~/Library/Application\ Support/StateSmith.Cli/foo.bar'`
               'system "#{bin}/ss.cli", "--version"'
               'system "#{bin}/statesmith", "--help"'
 
