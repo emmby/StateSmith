@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmith.Output.Sim;
 
@@ -49,17 +50,18 @@ public class SimWebGenerator
         // To customize the transformation/code generation process, we register custom DI services with the `SmRunner`.
 
         this.codeFileWriter = codeFileWriter;
-        DiServiceProvider simDiServiceProvider;
 
         var enablePreDiagramBasedSettings = false;  // need to stop it from trying to read diagram early as fake diagram path is used
-        runner = new(diagramPath: "placeholder-updated-in-generate-method.txt", renderConfig: new SimRenderConfig(), transpilerId: TranspilerId.JavaScript, algorithmId: mainRunnerSettings.algorithmId, enablePDBS: enablePreDiagramBasedSettings);
+        runner = new(diagramPath: "placeholder-updated-in-generate-method.txt", renderConfig: new SimRenderConfig(), transpilerId: TranspilerId.JavaScript, algorithmId: mainRunnerSettings.algorithmId, serviceCollectionOverrides: (services)=>
+        {
+            services.AddSingleton<IExpander>(trackingExpander);
+            services.AddSingleton<ICodeFileWriter>(fileCapturer);
+            services.AddSingleton<IConsolePrinter>(new DiscardingConsolePrinter());   // we want regular SmRunner console output to be discarded            
+        }, enablePDBS: enablePreDiagramBasedSettings);
         runner.Settings.propagateExceptions = true;
 
         // Registering DI services must be done before accessing `runner.SmTransformer`.
-        simDiServiceProvider = runner.GetExperimentalAccess().DiServiceProvider;
-        simDiServiceProvider.AddSingletonT<IExpander>(trackingExpander);
-        simDiServiceProvider.AddSingletonT<ICodeFileWriter>(fileCapturer);
-        simDiServiceProvider.AddSingletonT<IConsolePrinter>(new DiscardingConsolePrinter());   // we want regular SmRunner console output to be discarded
+        DiServiceProvider simDiServiceProvider = runner.GetExperimentalAccess().DiServiceProvider;
         AdjustTransformationPipeline();
         PreventCertainDiagramSpecifiedSettings(simDiServiceProvider.GetInstanceOf<RenderConfigBaseVars>());
 
