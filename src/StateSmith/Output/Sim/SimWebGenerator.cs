@@ -67,7 +67,7 @@ public class SimWebGenerator
 
         stateMachineProvider = simDiServiceProvider.GetInstanceOf<StateMachineProvider>();
 
-        nameMangler = simDiServiceProvider.GetInstanceOf<NameMangler>();
+        nameMangler = simDiServiceProvider.GetInstanceOf<INameMangler>();
 
         SetupGilHistoryRegex();
     }
