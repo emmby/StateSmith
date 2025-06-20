@@ -120,7 +120,7 @@ public class DiagramRunner
             return; //!!!!!!!!!!! NOTE the return here.
         }
 
-        LoggingCodeFileWriter loggingCodeFileWriter = (LoggingCodeFileWriter)smRunner.GetExperimentalAccess().DiServiceProvider.GetInstanceOf<ICodeFileWriter>();
+        LoggingCodeFileWriter loggingCodeFileWriter = (LoggingCodeFileWriter)smRunner.GetExperimentalAccess().IServiceProvider.GetRequiredService<ICodeFileWriter>();
 
         try
         {
