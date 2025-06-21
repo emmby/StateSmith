@@ -19,8 +19,6 @@ public class SharedCompilationFixture
     {
         var action = (SmRunner runner) =>
         {
-            runner.Settings.transpilerId = TranspilerId.Python;
-            runner.AlgoOrTranspilerUpdated();
             runner.Settings.outputGilCodeAlways = true;
 
             // NOTE!!! This runs before any other transformations so we can be confident that the code we are modifying is in the original form
@@ -37,14 +35,14 @@ public class SharedCompilationFixture
             }));
         };
 
-        Spec2Fixture.CompileAndRun(new MyGlueFile(), OutputDirectory, action: action, semiColon: "", trueString: "True");
+        Spec2Fixture.CompileAndRun(new MyGlueFile(), OutputDirectory, action: action, semiColon: "", trueString: "True", transpilerId: TranspilerId.Python);
 
         SimpleProcess process;
 
         process = new()
         {
             WorkingDirectory = OutputDirectory,
-            ProgramPath = "python",
+            ProgramPath = "python3",
             Args = " -m compileall ."   // https://stackoverflow.com/questions/5607283/how-can-i-manually-generate-a-pyc-file-from-a-py-file
         };
         process.Run(timeoutMs: SimpleProcess.DefaultLongTimeoutMs);

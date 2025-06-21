@@ -3,6 +3,7 @@
 using StateSmith.Output.UserConfig;
 using StateSmith.Output.UserConfig.AutoVars;
 using StateSmith.Runner;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmith.SmGraph;
 
@@ -27,11 +28,12 @@ public class PreDiagramSettingsReader
     /// </summary>
     public void Process()
     {
-        var di = DiServiceProvider.CreateDefault();
-        SmRunner.SetupDiProvider(di, renderConfigAllVars, smRunnerSettings, renderConfig);
+        var di = IConfigServiceProviderBuilder.CreateDefault()
+            .WithRenderConfig(renderConfigAllVars, renderConfig)
+            .WithRunnerSettings(smRunnerSettings)
+            .Build();
 
-        di.Build();
-        var inputSmBuilder = di.GetInstanceOf<InputSmBuilder>();
+        var inputSmBuilder = di.GetRequiredService<InputSmBuilder>();
 
         ModifyTransformationPipeline(inputSmBuilder);
 

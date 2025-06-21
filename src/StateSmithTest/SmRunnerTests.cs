@@ -3,6 +3,8 @@ using StateSmith.Runner;
 using System.IO;
 using System.Text.RegularExpressions;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
+
 
 namespace StateSmithTest.SmRunnerTest;
 
@@ -12,10 +14,13 @@ public class SmRunnerTests
     public void TestOkFilePrintBaseDefault()
     {
         string tempPath = Path.GetTempPath();
-
-        SmRunner runner = new(diagramPath: "test-input/drawio/Design1Sm.drawio.svg", outputDirectory: tempPath);
         StringBuilderConsolePrinter fakeConsole = new();
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<IConsolePrinter>(fakeConsole);
+
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            services.AddSingleton<IConsolePrinter>(fakeConsole);
+        });
+        SmRunner runner = new(diagramPath: "test-input/drawio/Design1Sm.drawio.svg", outputDirectory: tempPath, serviceProviderBuilder: spBuilder);
         runner.Run();
 
         // have to modify output so that test doesn't rely on temp path because that will vary
@@ -48,11 +53,14 @@ public class SmRunnerTests
     public void TestOkFilePrintBase2()
     {
         string tempPath = Path.GetTempPath();
-
-        SmRunner runner = new(diagramPath: "test-input/drawio/Design1Sm.drawio.svg", outputDirectory: tempPath);
-        runner.Settings.filePathPrintBase = tempPath;
         StringBuilderConsolePrinter fakeConsole = new();
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<IConsolePrinter>(fakeConsole);
+
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            services.AddSingleton<IConsolePrinter>(fakeConsole);
+        });
+        SmRunner runner = new(diagramPath: "test-input/drawio/Design1Sm.drawio.svg", outputDirectory: tempPath, serviceProviderBuilder: spBuilder);
+        runner.Settings.filePathPrintBase = tempPath;
         runner.Run();
 
         // have to modify output so that test doesn't rely on temp path because that will vary

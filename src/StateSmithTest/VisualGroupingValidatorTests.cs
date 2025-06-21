@@ -5,6 +5,7 @@ using FluentAssertions;
 using StateSmith.SmGraph;
 using System.Linq;
 using StateSmith.Runner;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmithTest.DrawIo.Issue81;
 
@@ -13,12 +14,12 @@ namespace StateSmithTest.DrawIo.Issue81;
 /// </summary>
 public class VisualGroupingValidatorTests
 {
-    readonly InputSmBuilder runner = new();
+    readonly InputSmBuilder runner = TestHelper.CreateServiceProvider().GetRequiredService<InputSmBuilder>();
     DrawIoToSmDiagramConverter converter;
 
     public VisualGroupingValidatorTests()
     {
-        converter = runner.sp.GetServiceOrCreateInstance();
+        converter = runner.sp.GetRequiredService<DrawIoToSmDiagramConverter>();
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public class VisualGroupingValidatorTests
 
     private DrawIoSettings GetDrawIoSettings()
     {
-        return runner.sp.GetServiceOrCreateInstance();
+        return runner.sp.GetRequiredService<DrawIoSettings>();
     }
 
     [Fact]

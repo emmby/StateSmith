@@ -3,6 +3,7 @@ using StateSmith.Runner;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmith.Cli.Run;
 
@@ -98,8 +99,11 @@ public class DiagramRunner
         runInfoStore.diagramRuns[absolutePath] = info; // will overwrite if already exists
 
         // the constructor will attempt to read diagram settings from the diagram file
-        SmRunner smRunner = new(settings: runnerSettings, renderConfig: null, callerFilePath: callerFilePath);
-        smRunner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<ICodeFileWriter, LoggingCodeFileWriter>();
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            services.AddSingleton<ICodeFileWriter, LoggingCodeFileWriter>();
+        });
+        SmRunner smRunner = new(settings: runnerSettings, renderConfig: null, callerFilePath: callerFilePath, serviceProviderBuilder: spBuilder);
 
         if (smRunner.PreDiagramBasedSettingsException != null)
         {
@@ -117,7 +121,7 @@ public class DiagramRunner
             return; //!!!!!!!!!!! NOTE the return here.
         }
 
-        LoggingCodeFileWriter loggingCodeFileWriter = (LoggingCodeFileWriter)smRunner.GetExperimentalAccess().DiServiceProvider.GetInstanceOf<ICodeFileWriter>();
+        LoggingCodeFileWriter loggingCodeFileWriter = (LoggingCodeFileWriter)smRunner.GetExperimentalAccess().IServiceProvider.GetRequiredService<ICodeFileWriter>();
 
         try
         {

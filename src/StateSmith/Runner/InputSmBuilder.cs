@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using StateSmith.Common;
 using StateSmith.Output.Algos.Balanced1;
 using StateSmith.Output;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmith.Runner;
 
@@ -36,14 +37,14 @@ public class InputSmBuilder
     protected StateMachine? Sm { get; set; }
 
     internal DiagramToSmConverter diagramToSmConverter; // todo - rework unit test code that relies on this so that it can be private https://github.com/StateSmith/StateSmith/issues/97
-    internal DiServiceProvider sp; // todo - rework unit test code that relies on this so we can remove it https://github.com/StateSmith/StateSmith/issues/97
+    internal IServiceProvider sp; // todo - rework unit test code that relies on this so we can remove it https://github.com/StateSmith/StateSmith/issues/97
 
-    readonly NameMangler mangler;
+    readonly INameMangler mangler;
     readonly DrawIoToSmDiagramConverter drawIoConverter;
     readonly StateMachineProvider stateMachineProvider;
     readonly DiagramFilePathProvider diagramFilePathProvider;
 
-    public InputSmBuilder(SmTransformer transformer, DiagramToSmConverter diagramToSmConverter, NameMangler mangler, DrawIoToSmDiagramConverter converter, DiServiceProvider sp, StateMachineProvider stateMachineProvider, DiagramFilePathProvider diagramFilePathProvider)
+    public InputSmBuilder(SmTransformer transformer, DiagramToSmConverter diagramToSmConverter, INameMangler mangler, DrawIoToSmDiagramConverter converter, IServiceProvider sp, StateMachineProvider stateMachineProvider, DiagramFilePathProvider diagramFilePathProvider)
     {
         SmRunnerInternal.AppUseDecimalPeriod(); // done here as well to help with unit tests
 
@@ -56,23 +57,6 @@ public class InputSmBuilder
         this.diagramFilePathProvider = diagramFilePathProvider;
     }
 
-    // todo_low - replace with unit testing factory helper.
-    // The factory helper could setup DI and then this class could rely on it.
-    internal InputSmBuilder(Action<DiServiceProvider>? setupAction = null)
-    {
-        SmRunnerInternal.AppUseDecimalPeriod(); // done here as well to help with unit tests
-
-        sp = DiServiceProvider.CreateDefault();
-        sp.AddSingleton(this);
-        setupAction?.Invoke(sp);
-        sp.Build();
-        diagramToSmConverter = sp.GetServiceOrCreateInstance();
-        transformer = sp.GetServiceOrCreateInstance();
-        mangler = sp.GetInstanceOf<NameMangler>();
-        drawIoConverter = sp.GetServiceOrCreateInstance();
-        stateMachineProvider = sp.GetServiceOrCreateInstance();
-        diagramFilePathProvider = sp.GetInstanceOf<DiagramFilePathProvider>();
-    }
 
     public bool HasStateMachine => Sm != null;
 
@@ -226,7 +210,7 @@ public class InputSmBuilder
         Sm = stateMachine;
         stateMachineProvider.SetStateMachine(Sm);
         mangler.SetStateMachine(GetStateMachine());
-        sp.GetInstanceOf<OutputInfo>().baseFileName = mangler.BaseFileName;
+        ActivatorUtilities.GetServiceOrCreateInstance<OutputInfo>(sp).baseFileName = mangler.BaseFileName;
     }
 
     //------------------------------------------------------------------------

@@ -9,6 +9,7 @@ using System;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using StateSmith.Output.UserConfig.AutoVars;
+using System.Collections.Generic;
 
 namespace StateSmith.Runner;
 
@@ -20,9 +21,14 @@ public class SmRunner : SmRunner.IExperimentalAccess
     public RunnerSettings Settings => settings;
 
     /// <summary>
-    /// Dependency Injection Service Provider
+    /// Dependency Injection ServiceProvider Builder.
+    /// We can't use the IServiceProvider directly because we need to add the 
+    /// dependencies that are based on RenderConfig and RunnerSettings.
     /// </summary>
-    readonly DiServiceProvider diServiceProvider;
+    readonly IConfigServiceProviderBuilder serviceProviderBuilder;
+
+    // TODO remove ? once it's guaranteed to be non-null
+    private IServiceProvider? serviceProvider;
 
     readonly RunnerSettings settings;
 
@@ -42,9 +48,10 @@ public class SmRunner : SmRunner.IExperimentalAccess
     /// </summary>
     /// <param name="settings"></param>
     /// <param name="renderConfig"></param>
+    /// <param name="serviceOverrides">Optional dependency injection overrides</param>
     /// <param name="callerFilePath">Don't provide this argument. C# will automatically populate it.</param>
     /// <param name="enablePDBS">User code should leave unspecified for now.</param>
-    public SmRunner(RunnerSettings settings, IRenderConfig? renderConfig, [System.Runtime.CompilerServices.CallerFilePath] string? callerFilePath = null, bool enablePDBS = true)
+    public SmRunner(RunnerSettings settings, IRenderConfig? renderConfig, IConfigServiceProviderBuilder? serviceProviderBuilder = null, [System.Runtime.CompilerServices.CallerFilePath] string? callerFilePath = null, bool enablePDBS = true)
     {
         SmRunnerInternal.AppUseDecimalPeriod();
 
@@ -54,7 +61,8 @@ public class SmRunner : SmRunner.IExperimentalAccess
         this.callerFilePath = callerFilePath.ThrowIfNull();
         SmRunnerInternal.ResolveFilePaths(settings, callerFilePath);
 
-        diServiceProvider = DiServiceProvider.CreateDefault();
+        this.serviceProviderBuilder = serviceProviderBuilder ?? IConfigServiceProviderBuilder.CreateDefault();
+
         SetupDependencyInjectionAndRenderConfigs();
     }
 
@@ -68,13 +76,15 @@ public class SmRunner : SmRunner.IExperimentalAccess
     /// <param name="transpilerId">Optional. Defaults to C99. Allows you to specify which programming language to generate for. Ignored if custom code generator used.</param>
     /// <param name="callingFilePath">Should normally be left unspecified so that C# can determine it automatically.</param>
     /// <param name="enablePDBS">User could should leave unspecified for now.</param>
+    /// <param name="serviceProviderBuilder">Optional builder for the IServiceProvider</param>
     public SmRunner(string diagramPath,
         IRenderConfig? renderConfig = null,
         string? outputDirectory = null,
         AlgorithmId algorithmId = AlgorithmId.Default,
         TranspilerId transpilerId = TranspilerId.Default,
+        IConfigServiceProviderBuilder? serviceProviderBuilder = null,
         [System.Runtime.CompilerServices.CallerFilePath] string? callingFilePath = null, bool enablePDBS = true)
-    : this(new RunnerSettings(diagramFile: diagramPath, outputDirectory: outputDirectory, algorithmId: algorithmId, transpilerId: transpilerId), renderConfig, callerFilePath: callingFilePath, enablePDBS: enablePDBS)
+    : this(new RunnerSettings(diagramFile: diagramPath, outputDirectory: outputDirectory, algorithmId: algorithmId, transpilerId: transpilerId), renderConfig, serviceProviderBuilder, callerFilePath: callingFilePath, enablePDBS: enablePDBS)
     {
     }
 
@@ -82,7 +92,7 @@ public class SmRunner : SmRunner.IExperimentalAccess
     /// Publicly exposed so that users can customize transformation behavior.
     /// Accessing this member will cause the Dependency Injection settings to be finalized.
     /// </summary>
-    public SmTransformer SmTransformer => diServiceProvider.GetServiceOrCreateInstance();
+    public SmTransformer SmTransformer => ActivatorUtilities.GetServiceOrCreateInstance<SmTransformer>(serviceProvider);
 
     /// <summary>
     /// This API is experimental and may change in the future.
@@ -90,18 +100,22 @@ public class SmRunner : SmRunner.IExperimentalAccess
     public ExceptionDispatchInfo? PreDiagramBasedSettingsException => preDiagramBasedSettingsException;
 
     /// <summary>
-    /// Runs StateSmith. Will cause the Dependency Injection settings to be finalized.
+    /// Runs StateSmith.
     /// </summary>
     public void Run()
     {
+        // TODO remove SmRunner direct use of DiServiceProvider, use IServiceProvider instead
+        // TODO move DI finalization out of SmRunner
+
         SmRunnerInternal.AppUseDecimalPeriod(); // done here as well to be cautious for the future
 
-        PrepareBeforeRun(); // finalizes dependency injection
-        SmRunnerInternal smRunnerInternal = diServiceProvider.GetServiceOrCreateInstance();
+        PrepareBeforeRun();
+        SmRunnerInternal smRunnerInternal = serviceProvider!.GetRequiredService<SmRunnerInternal>();
         smRunnerInternal.preDiagramBasedSettingsAlreadyApplied = enablePreDiagramBasedSettings;
 
         // Wrap in try finally so that we can ensure that the service provider is disposed which will
         // dispose of objects that it created.
+        // TODO remove
         try
         {
             PrintAndThrowIfPreDiagramSettingsException();
@@ -113,13 +127,15 @@ public class SmRunner : SmRunner.IExperimentalAccess
         }
         finally
         {
-            diServiceProvider.Dispose();
+            // TODO remove this once IHost lifecycle is managed outside of SmRunner.
+            serviceProviderBuilder.Dispose();
         }
 
         if (smRunnerInternal.exception != null)
         {
             throw new FinishedWithFailureException();
         }
+    
     }
 
     /// <summary>
@@ -130,7 +146,7 @@ public class SmRunner : SmRunner.IExperimentalAccess
         if (PreDiagramBasedSettingsException != null)
         {
             // We use SmRunnerInternal to print the exception so that it is consistent with the rest of the code.
-            SmRunnerInternal smRunnerInternal = diServiceProvider.GetServiceOrCreateInstance();
+            SmRunnerInternal smRunnerInternal = ActivatorUtilities.GetServiceOrCreateInstance<SmRunnerInternal>(serviceProvider);
             smRunnerInternal.OutputExceptionDetail(PreDiagramBasedSettingsException.SourceException);
             if (settings.propagateExceptions)
             {
@@ -148,8 +164,6 @@ public class SmRunner : SmRunner.IExperimentalAccess
         var renderConfigAllVars = new RenderConfigAllVars();
 
         ReadRenderConfigObjectToVars(renderConfigAllVars, iRenderConfig, settings.autoDeIndentAndTrimRenderConfigItems);
-
-        SetupDiProvider(diServiceProvider, renderConfigAllVars, settings, iRenderConfig);
 
         // we disable early diagram settings reading for the simulator and some tests
         if (enablePreDiagramBasedSettings)
@@ -172,34 +186,14 @@ public class SmRunner : SmRunner.IExperimentalAccess
             }
         }
 
-        AlgoOrTranspilerUpdated();
+        // TODO move this higher so DI is available during the prediagram settings reading
+        serviceProvider = serviceProviderBuilder
+            .WithRenderConfig(renderConfigAllVars, iRenderConfig)
+            .WithRunnerSettings(settings)
+            .Build();
+
     }
 
-    internal static void SetupDiProvider(DiServiceProvider di, RenderConfigAllVars renderConfigAllVars, RunnerSettings settings, IRenderConfig iRenderConfig)
-    {
-        di.AddConfiguration((services) =>
-        {
-            services.AddSingleton(settings.drawIoSettings);
-            services.AddSingleton(settings.smDesignDescriber);
-            services.AddSingleton(settings.style);
-            services.AddSingleton<OutputInfo>();
-            services.AddSingleton<IOutputInfo>((s) => s.GetService<OutputInfo>().ThrowIfNull());
-            services.AddSingleton(renderConfigAllVars);
-            services.AddSingleton(renderConfigAllVars.Base);
-            services.AddSingleton(renderConfigAllVars.C);
-            services.AddSingleton(renderConfigAllVars.Cpp);
-            services.AddSingleton(renderConfigAllVars.CSharp);
-            services.AddSingleton(renderConfigAllVars.JavaScript);
-            services.AddSingleton(renderConfigAllVars.TypeScript);
-            services.AddSingleton(renderConfigAllVars.Java);
-            services.AddSingleton(renderConfigAllVars.Python);
-            services.AddSingleton(new ExpansionConfigReaderObjectProvider(iRenderConfig));
-            services.AddSingleton(settings); // todo_low - split settings up more
-            services.AddSingleton<ExpansionsPrep>();
-            services.AddSingleton<FilePathPrinter>(new FilePathPrinter(settings.filePathPrintBase.ThrowIfNull()));
-            services.AddSingleton(settings.algoBalanced1);
-        });
-    }
 
     internal static void ReadRenderConfigObjectToVars(RenderConfigAllVars renderConfigAllVars, IRenderConfig iRenderConfig, bool autoDeIndentAndTrimRenderConfigItems)
     {
@@ -228,23 +222,14 @@ public class SmRunner : SmRunner.IExperimentalAccess
     }
 
     /// <summary>
-    /// You only need to call this if you adjust the algorithm or transpiler id after constructing a <see cref="SmRunner"/>.
-    /// Will put in some defaults appropriate for algorithm and transpiler.
-    /// </summary>
-    public void AlgoOrTranspilerUpdated()
-    {
-        new AlgoTranspilerCustomizer().Customize(diServiceProvider, settings.algorithmId, settings.transpilerId, settings.algoBalanced1, settings.style);
-    }
-
-    /// <summary>
     /// Finalizes dependency injection settings.
+    /// TODO fix summary
     /// exists just for testing. can be removed in the future.
     /// </summary>
     internal void PrepareBeforeRun()
     {
-        diServiceProvider.BuildIfNeeded();
         SmRunnerInternal.ResolveFilePaths(settings, callerFilePath);
-        OutputInfo outputInfo = diServiceProvider.GetInstanceOf<OutputInfo>();
+        OutputInfo outputInfo = serviceProvider!.GetRequiredService<OutputInfo>();
         outputInfo.outputDirectory = settings.outputDirectory.ThrowIfNull();
     }
 
@@ -252,19 +237,17 @@ public class SmRunner : SmRunner.IExperimentalAccess
     // exists just for now to help make it clear StateSmith API that is likely to change soon.
 
     public IExperimentalAccess GetExperimentalAccess() => this;
-    DiServiceProvider IExperimentalAccess.DiServiceProvider => diServiceProvider;
+    IServiceProvider IExperimentalAccess.IServiceProvider => serviceProvider;
     RunnerSettings IExperimentalAccess.Settings => settings;
-    InputSmBuilder IExperimentalAccess.InputSmBuilder => diServiceProvider.GetServiceOrCreateInstance();
+    InputSmBuilder IExperimentalAccess.InputSmBuilder => ActivatorUtilities.GetServiceOrCreateInstance<InputSmBuilder>(serviceProvider);
 
     /// <summary>
     /// The API in this experimental access may break often. It will eventually stabilize after enough use and feedback.
     /// </summary>
     public interface IExperimentalAccess
     {
-        /// <summary>
-        /// Dependency Injection Service Provider
-        /// </summary>
-        DiServiceProvider DiServiceProvider { get; }
+
+        IServiceProvider IServiceProvider { get; }
 
         RunnerSettings Settings { get; }
         InputSmBuilder InputSmBuilder { get; }

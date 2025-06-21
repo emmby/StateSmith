@@ -28,7 +28,7 @@ public class SmRunnerInternal
     readonly OutputInfo outputInfo;
     readonly SimWebGenerator simWebGenerator;
 
-    public SmRunnerInternal(InputSmBuilder inputSmBuilder, RunnerSettings settings, ICodeGenRunner codeGenRunner, ExceptionPrinter exceptionPrinter, IConsolePrinter consolePrinter, FilePathPrinter filePathPrinter, SmDesignDescriber smDesignDescriber, OutputInfo outputInfo, SimWebGenerator simWebGenerator)
+    public SmRunnerInternal(InputSmBuilder inputSmBuilder, RunnerSettings settings, ICodeGenRunner codeGenRunner, ExceptionPrinter exceptionPrinter, IConsolePrinter consolePrinter, FilePathPrinter filePathPrinter, SmDesignDescriber smDesignDescriber, OutputInfo outputInfo, SimWebGenerator simWebGenerator, AlgoTranspilerCustomizer algoTranspilerCustomizer)
     {
         this.inputSmBuilder = inputSmBuilder;
         this.settings = settings;
@@ -39,6 +39,8 @@ public class SmRunnerInternal
         this.smDesignDescriber = smDesignDescriber;
         this.outputInfo = outputInfo;
         this.simWebGenerator = simWebGenerator;
+
+        algoTranspilerCustomizer.Customize(settings.algorithmId, settings.transpilerId);
     }
 
     public void Run()

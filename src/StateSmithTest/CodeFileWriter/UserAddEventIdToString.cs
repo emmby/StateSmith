@@ -5,6 +5,7 @@ using StateSmith.Runner;
 using System.IO;
 using System.Text;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmithTest.CodeFileWriterTests;
 
@@ -14,10 +15,10 @@ public class UserAddEventIdToString
     public class MyCodeFileWriter : ICodeFileWriter
     {
         StateMachineProvider smProvider;
-        NameMangler mangler;
+        INameMangler mangler;
         CodeStyleSettings codeStyle;
 
-        public MyCodeFileWriter(StateMachineProvider smProvider, NameMangler mangler, CodeStyleSettings codeStyle)
+        public MyCodeFileWriter(StateMachineProvider smProvider, INameMangler mangler, CodeStyleSettings codeStyle)
         {
             this.smProvider = smProvider;
             this.mangler = mangler;
@@ -79,10 +80,12 @@ public class UserAddEventIdToString
     [Fact]
     public void ExampleCustomCodeGen()
     {
-        SmRunner runner = new(diagramPath: "Ex2.drawio.svg");
-
-        // register our custom code file writer
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<ICodeFileWriter, MyCodeFileWriter>();
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            // register our custom code file writer
+            services.AddSingleton<ICodeFileWriter, MyCodeFileWriter>();
+        });
+        SmRunner runner = new(diagramPath: "Ex2.drawio.svg", serviceProviderBuilder: spBuilder);
 
         // adjust settings because we are unit testing. Normally wouldn't do below.
         runner.Settings.propagateExceptions = true;

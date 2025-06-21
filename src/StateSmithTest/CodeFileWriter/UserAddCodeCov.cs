@@ -4,6 +4,7 @@ using StateSmith.Runner;
 using System.IO;
 using System.Text.RegularExpressions;
 using Xunit;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StateSmithTest.CodeFileWriterTests;
 
@@ -86,10 +87,12 @@ public class UserRemoveStateIdFuncAddCoverage
     [Fact]
     public void ExampleCustomCodeGen()
     {
-        SmRunner runner = new(diagramPath: "Ex1.drawio.svg", algorithmId: AlgorithmId.Balanced1);
-
-        // register our custom code file writer
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<ICodeFileWriter, MyCodeFileWriter>();
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            // register our custom code file writer
+            services.AddSingleton<ICodeFileWriter, MyCodeFileWriter>();
+        });
+        SmRunner runner = new(diagramPath: "Ex1.drawio.svg", algorithmId: AlgorithmId.Balanced1, serviceProviderBuilder: spBuilder);
 
         // adjust settings because we are unit testing. Normally wouldn't do below.
         runner.Settings.propagateExceptions = true;

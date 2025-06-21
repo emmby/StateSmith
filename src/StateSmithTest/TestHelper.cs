@@ -8,6 +8,8 @@ using StateSmithTest.Output;
 using System;
 using System.IO;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using StateSmith.Output.Algos.Balanced1;
 
 namespace StateSmithTest;
 
@@ -26,11 +28,14 @@ public class TestHelper
 
     public static (SmRunner, CapturingCodeFileWriter) CaptureSmRun(string diagramPath, IRenderConfig? renderConfig = null, TranspilerId transpilerId = TranspilerId.Default, AlgorithmId algorithmId = AlgorithmId.Default, IConsolePrinter? iConsolePrinter = null, [System.Runtime.CompilerServices.CallerFilePath] string? callerFilePath = null)
     {
-        SmRunner runner = new(diagramPath: diagramPath, renderConfig: renderConfig, transpilerId: transpilerId, algorithmId: algorithmId, callingFilePath: callerFilePath);
-        runner.GetExperimentalAccess().Settings.propagateExceptions = true;
         var fakeFileSystem = new CapturingCodeFileWriter();
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<ICodeFileWriter>(fakeFileSystem);
-        runner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<IConsolePrinter>(iConsolePrinter ?? new DiscardingConsolePrinter());
+        var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+        {
+            services.AddSingleton<ICodeFileWriter>(fakeFileSystem);
+            services.AddSingleton<IConsolePrinter>(iConsolePrinter ?? new DiscardingConsolePrinter());
+        });
+        SmRunner runner = new(diagramPath: diagramPath, renderConfig: renderConfig, transpilerId: transpilerId, algorithmId: algorithmId, callingFilePath: callerFilePath, serviceProviderBuilder: spBuilder);
+        runner.GetExperimentalAccess().Settings.propagateExceptions = true;
         runner.Run();
 
         return (runner, fakeFileSystem);
@@ -48,10 +53,13 @@ public class TestHelper
 
         try
         {
-            SmRunner smRunner = new(diagramPath: tempFilePath, renderConfig: renderConfig, transpilerId: transpilerId, algorithmId: algorithmId);
+            var spBuilder = IConfigServiceProviderBuilder.CreateDefault((services) =>
+            {
+                services.AddSingleton<ICodeFileWriter>(codeFileWriter ?? new DiscardingCodeFileWriter());
+                services.AddSingleton<IConsolePrinter>(consoleCapturer ?? new DiscardingConsolePrinter());
+            });
+            SmRunner smRunner = new(diagramPath: tempFilePath, renderConfig: renderConfig, algorithmId: algorithmId, transpilerId: transpilerId, serviceProviderBuilder: spBuilder);
             postConstruct?.Invoke(smRunner);
-            smRunner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<ICodeFileWriter>(codeFileWriter ?? new DiscardingCodeFileWriter());
-            smRunner.GetExperimentalAccess().DiServiceProvider.AddSingletonT<IConsolePrinter>(consoleCapturer ?? new DiscardingConsolePrinter());
             smRunner.Settings.propagateExceptions = propagateExceptions;
             preRun?.Invoke(smRunner);
             smRunner.Run();
@@ -86,6 +94,15 @@ public class TestHelper
         {
             File.Delete(tempFilePath);
         }
+    }
+
+    public static IServiceProvider CreateServiceProvider(Action<IServiceCollection>? serviceOverrides = null)
+    {
+        SmRunnerInternal.AppUseDecimalPeriod(); // done here as well to help with unit tests
+
+        var di = IConfigServiceProviderBuilder.CreateDefault(serviceOverrides).Build();
+
+        return di.GetRequiredService<IServiceProvider>();
     }
 
     public static FieldInfo[] GetTypeFields<T>()
